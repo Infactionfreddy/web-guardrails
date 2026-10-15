@@ -1,0 +1,19 @@
+name: web-guardrails
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Infactionfreddy/web-guardrails@v1
+        with:
+          path: .
+          strict: "false"   # "true" = auch WARN-Funde lassen den Check scheitern

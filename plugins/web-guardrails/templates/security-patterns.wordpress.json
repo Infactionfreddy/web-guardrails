@@ -1,0 +1,165 @@
+{
+  "patterns": [
+    {
+      "rule_name": "wp_superglobal_raw",
+      "regex": "\\$_(?:GET|POST|REQUEST|COOKIE|SERVER|FILES)\\[",
+      "paths": ["**/*.php"],
+      "exclude_paths": ["**/vendor/**"],
+      "reminder": "Superglobal-Zugriff: wp_unslash() + passendes sanitize_*()/absint()/Whitelist verwenden, vorher Nonce und current_user_can() prüfen."
+    },
+    {
+      "rule_name": "wp_wpdb_unprepared",
+      "regex": "\\$wpdb->(?:query|get_results|get_row|get_var|get_col)\\s*\\(\\s*(?:\"[^\"]*\\$|'[^']*'\\s*\\.)",
+      "paths": ["**/*.php"],
+      "reminder": "$wpdb-Abfrage mit eingesetzter Variable: $wpdb->prepare() mit %s/%d/%i-Platzhaltern verwenden."
+    },
+    {
+      "rule_name": "wp_esc_sql",
+      "substrings": ["esc_sql("],
+      "paths": ["**/*.php"],
+      "reminder": "esc_sql() ist kein Ersatz für $wpdb->prepare() und schützt nicht ohne Anführungszeichen. prepare() verwenden."
+    },
+    {
+      "rule_name": "wp_order_by_variable",
+      "regex": "ORDER\\s+BY\\s+(?:\\$|[\"']\\s*\\.\\s*\\$|\\{\\$)",
+      "paths": ["**/*.php"],
+      "reminder": "ORDER BY mit Variable: Spalten- und Richtungsnamen nur über eine feste Whitelist zulassen (prepare() hilft hier nicht)."
+    },
+    {
+      "rule_name": "wp_rest_open",
+      "regex": "['\"]permission_callback['\"]\\s*=>\\s*['\"]__return_true['\"]",
+      "paths": ["**/*.php"],
+      "reminder": "REST-Route ist für alle offen. Nur für rein lesende, öffentliche Daten zulässig, sonst current_user_can() im permission_callback."
+    },
+    {
+      "rule_name": "wp_rest_route",
+      "substrings": ["register_rest_route("],
+      "paths": ["**/*.php"],
+      "reminder": "register_rest_route: permission_callback ist Pflicht, args mit sanitize_callback/validate_callback definieren."
+    },
+    {
+      "rule_name": "wp_ajax_nopriv",
+      "substrings": ["wp_ajax_nopriv_"],
+      "paths": ["**/*.php"],
+      "reminder": "AJAX für nicht eingeloggte Nutzer: Nonce prüfen, Eingaben strikt validieren, Missbrauch (Spam, Enumeration, Rate-Limit) bedenken."
+    },
+    {
+      "rule_name": "wp_action_handler",
+      "regex": "add_action\\s*\\(\\s*['\"](?:wp_ajax_|admin_post_)",
+      "paths": ["**/*.php"],
+      "reminder": "Handler für AJAX/admin-post: check_ajax_referer()/check_admin_referer() UND current_user_can() am Anfang des Handlers."
+    },
+    {
+      "rule_name": "wp_is_admin_as_auth",
+      "regex": "if\\s*\\(\\s*!?\\s*is_admin\\s*\\(\\s*\\)",
+      "paths": ["**/*.php"],
+      "reminder": "is_admin() prüft nur, ob ein Admin-Screen geladen ist (auch für admin-ajax.php ohne Login). Für Berechtigungen current_user_can() verwenden."
+    },
+    {
+      "rule_name": "wp_unescaped_output",
+      "regex": "(?:\\becho\\s+|<\\?=\\s*)\\$(?!this\\b)[A-Za-z_]",
+      "paths": ["**/*.php"],
+      "reminder": "Ausgabe einer Variable ohne Escaping: esc_html()/esc_attr()/esc_url()/wp_kses_post() direkt bei der Ausgabe verwenden."
+    },
+    {
+      "rule_name": "wp_unserialize",
+      "regex": "\\b(?:maybe_)?unserialize\\s*\\(",
+      "paths": ["**/*.php"],
+      "reminder": "unserialize() auf nicht vertrauenswürdigen Daten ermöglicht PHP Object Injection. JSON verwenden."
+    },
+    {
+      "rule_name": "wp_extract",
+      "regex": "\\bextract\\s*\\(",
+      "paths": ["**/*.php"],
+      "reminder": "extract() überschreibt Variablen unkontrolliert. Werte explizit zuweisen."
+    },
+    {
+      "rule_name": "wp_dynamic_include",
+      "regex": "\\b(?:include|require)(?:_once)?\\s*\\(?\\s*\\$",
+      "paths": ["**/*.php"],
+      "reminder": "include/require mit Variable: Gefahr von Local File Inclusion. Nur feste Pfade oder strikte Whitelist."
+    },
+    {
+      "rule_name": "php_shell_exec",
+      "regex": "(?<![\\w>$:])(?:shell_exec|exec|system|passthru|proc_open|popen)\\s*\\(",
+      "paths": ["**/*.php"],
+      "reminder": "Shell-Ausführung im WordPress-Code. Vermeiden. Falls unumgänglich: escapeshellarg() und keine Benutzereingaben."
+    },
+    {
+      "rule_name": "wp_upload_raw",
+      "substrings": ["move_uploaded_file("],
+      "paths": ["**/*.php"],
+      "reminder": "Uploads über wp_handle_upload()/media_handle_upload() mit wp_check_filetype_and_ext() und Größenlimit abwickeln."
+    },
+    {
+      "rule_name": "php_remote_fetch",
+      "regex": "\\b(?:file_get_contents|curl_init|fopen)\\s*\\(\\s*\\$",
+      "paths": ["**/*.php"],
+      "reminder": "Abruf einer variablen URL: wp_safe_remote_get() verwenden (SSRF-Schutz gegen interne Adressen)."
+    },
+    {
+      "rule_name": "wp_remote_variable_url",
+      "regex": "\\bwp_remote_(?:get|post|request|head)\\s*\\(\\s*\\$",
+      "paths": ["**/*.php"],
+      "reminder": "Kommt die URL von außen, wp_safe_remote_*() verwenden (blockiert interne/private Ziele)."
+    },
+    {
+      "rule_name": "wp_redirect_unsafe",
+      "substrings": ["wp_redirect("],
+      "paths": ["**/*.php"],
+      "reminder": "Bei nutzerbeeinflussten Zielen wp_safe_redirect() verwenden (Open Redirect) und danach exit; aufrufen."
+    },
+    {
+      "rule_name": "wp_option_from_request",
+      "regex": "\\bupdate_(?:option|post_meta|user_meta|term_meta)\\s*\\([^;]*\\$_(?:POST|GET|REQUEST)",
+      "paths": ["**/*.php"],
+      "reminder": "Speichern aus Request-Daten: Nonce + current_user_can() prüfen und Wert sanitizen, bevor er gespeichert wird."
+    },
+    {
+      "rule_name": "dsgvo_personal_data_storage",
+      "regex": "\\$wpdb->insert\\s*\\(|\\bwp_insert_post\\s*\\([^;]*(?:email|mail|telefon|phone)",
+      "paths": ["**/*.php"],
+      "reminder": "DSGVO: Werden personenbezogene Daten gespeichert? Nur Notwendiges speichern, Löschfrist + Lösch-Cronjob umsetzen, Datenschutzerklärung anpassen."
+    },
+    {
+      "rule_name": "dsgvo_ip_address",
+      "regex": "REMOTE_ADDR|HTTP_X_FORWARDED_FOR|HTTP_CLIENT_IP",
+      "paths": ["**/*.php"],
+      "reminder": "IP-Adressen sind personenbezogen. Nicht speichern/loggen (höchstens gekürzt/gehasht mit kurzer Frist). X-Forwarded-For ist fälschbar."
+    },
+    {
+      "rule_name": "dsgvo_cookie",
+      "substrings": ["setcookie(", "document.cookie"],
+      "reminder": "Cookie wird gesetzt: Nur technisch zwingend notwendige Cookies ohne Einwilligung (§ 25 TDDDG). Sonst erst nach Consent setzen."
+    },
+    {
+      "rule_name": "dsgvo_web_storage",
+      "regex": "\\b(?:localStorage|sessionStorage)\\.setItem",
+      "reminder": "Web Storage fällt wie Cookies unter § 25 TDDDG. Nur für zwingend nötige Funktionen ohne Einwilligung."
+    },
+    {
+      "rule_name": "jquery_html_injection",
+      "regex": "\\.(?:html|append|prepend|after|before)\\s*\\(\\s*(?:[A-Za-z_$][\\w$.]*\\s*\\)|[^)]*\\+)",
+      "paths": ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
+      "exclude_paths": ["**/vendor/**", "**/node_modules/**", "**/*.min.js"],
+      "reminder": "jQuery-DOM-Einfügung mit Variablen: XSS-Gefahr. .text() verwenden oder Werte vorher escapen."
+    },
+    {
+      "rule_name": "wp_debug_enabled",
+      "regex": "define\\s*\\(\\s*['\"]WP_DEBUG(?:_DISPLAY)?['\"]\\s*,\\s*true",
+      "reminder": "WP_DEBUG/WP_DEBUG_DISPLAY in Produktion deaktivieren. Fehlerausgaben verraten Pfade und Interna."
+    },
+    {
+      "rule_name": "php_debug_output",
+      "regex": "\\b(?:var_dump|print_r|phpinfo|error_reporting\\s*\\(\\s*E_ALL)\\b",
+      "paths": ["**/*.php"],
+      "reminder": "Debug-Ausgabe im Code. Vor dem Ausliefern entfernen."
+    },
+    {
+      "rule_name": "secret_prefix",
+      "substrings": ["sk_live_", "sk_test_", "AKIA", "AIza", "ghp_", "xoxb-"],
+      "exclude_paths": ["**/.claude/**", "**/*.md"],
+      "reminder": "Möglicher Schlüssel/Passwort im Code. Secrets gehören in wp-config.php-Konstanten oder Umgebungsvariablen, nicht ins Repo."
+    }
+  ]
+}

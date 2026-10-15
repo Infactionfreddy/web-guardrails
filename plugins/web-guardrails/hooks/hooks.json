@@ -1,0 +1,45 @@
+{
+  "description": "web-guardrails: Projektregeln laden, harte Verstöße blockieren, Drittanbieter melden",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/guard.py", "context"],
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/guard.py", "pre"],
+            "timeout": 15,
+            "statusMessage": "web-guardrails: prüfe DSGVO & Sicherheit"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/guard.py", "post"],
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

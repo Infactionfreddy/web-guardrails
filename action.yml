@@ -1,0 +1,30 @@
+name: web-guardrails
+description: DSGVO- und Sicherheits-Scan für Webprojekte (Drittanbieter-Verbindungen, Google Fonts, Secrets, PHP/WordPress-Injection-Muster)
+author: Infactionfreddy
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  path:
+    description: Zu prüfender Pfad (relativ zum Repository)
+    required: false
+    default: "."
+  strict:
+    description: '"true" = auch WARN-Funde lassen den Check scheitern'
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: web-guardrails scan
+      shell: bash
+      env:
+        WG_PATH: ${{ inputs.path }}
+        WG_STRICT: ${{ inputs.strict }}
+        WG_SCRIPT: ${{ github.action_path }}/plugins/web-guardrails/scripts/guard.py
+      run: |
+        args=(scan --github)
+        if [ "$WG_STRICT" = "true" ]; then args+=(--strict); fi
+        python3 "$WG_SCRIPT" "${args[@]}" "$WG_PATH"

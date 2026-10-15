@@ -1,0 +1,5 @@
+repos:
+  - repo: https://github.com/Infactionfreddy/web-guardrails
+    rev: v1.0.0
+    hooks:
+      - id: web-guardrails
